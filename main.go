@@ -92,7 +92,7 @@ func renameModule(modulePath string, old, new string) error {
 	return nil
 }
 
-func makeLocal(modulePath string, moduleName string, replace *modfile.Replace) error {
+func makeLocal(modulePath string, mainModuleName string, replace *modfile.Replace) error {
 	localizedSubmoduleName := getLocalModuleName(replace.New)
 	sourceModulePath := filepath.Join(modulePath, replace.New.Path)
 	localizedModulePath := filepath.Join(modulePath, localizedSubmoduleName)
@@ -100,7 +100,7 @@ func makeLocal(modulePath string, moduleName string, replace *modfile.Replace) e
 	if err != nil {
 		return err
 	}
-	err = renameModule(modulePath, replace.Old.Path, fmt.Sprintf(`%s/%s`, moduleName, localizedSubmoduleName))
+	err = renameModule(modulePath, replace.Old.Path, fmt.Sprintf(`%s/%s`, mainModuleName, localizedSubmoduleName))
 	if err != nil {
 		return err
 	}
@@ -136,12 +136,18 @@ func localize(gomodPath string, newModuleName string) error {
 	if err != nil {
 		return err
 	}
+	mainModuleName := gomod.Module.Mod.Path
+	moduleRenames := map[string]string{}
 	modulePath, _ := filepath.Split(gomodPath)
 	for _, replace := range gomod.Replace {
-		err := makeLocal(modulePath, gomod.Module.Mod.String(), replace)
+		localizedSubmoduleName := getLocalModuleName(replace.New)
+		sourceModulePath := filepath.Join(modulePath, replace.New.Path)
+		localizedModulePath := filepath.Join(modulePath, localizedSubmoduleName)
+		err := copyDir(sourceModulePath, localizedModulePath, []string{"go.mod", "go.sum"})
 		if err != nil {
 			return err
 		}
+		moduleRenames[replace.Old.Path] = fmt.Sprintf(`%s/%s`, mainModuleName, localizedSubmoduleName)
 		moduleName := replace.Old.Path
 		moduleVersion := replace.Old.Version
 		err = gomod.DropReplace(moduleName, moduleVersion)
@@ -154,7 +160,14 @@ func localize(gomodPath string, newModuleName string) error {
 		}
 	}
 
-	err = renameModule(modulePath, gomod.Module.Mod.Path, newModuleName)
+	for old, new := range moduleRenames {
+		err = renameModule(modulePath, old, new)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = renameModule(modulePath, mainModuleName, newModuleName)
 	if err != nil {
 		return err
 	}
