@@ -1,4 +1,4 @@
-module github.com/vsapronov/gotore.git
+module github.com/vsapronov/gotore
 
 go 1.18
 
