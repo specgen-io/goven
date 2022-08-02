@@ -120,6 +120,7 @@ func readGomod(gomodPath string) (*modfile.File, error) {
 }
 
 func writeGomod(file *modfile.File, path string) error {
+	file.Cleanup()
 	data, err := file.Format()
 	if err != nil {
 		return err
