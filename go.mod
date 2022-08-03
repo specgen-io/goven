@@ -1,4 +1,4 @@
-module github.com/vsapronov/gotore
+module github.com/specgen-io/goven
 
 go 1.18
 

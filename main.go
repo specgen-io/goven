@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/vsapronov/gotore/goven"
+	"github.com/specgen-io/goven/goven"
 	"os"
 )
 
