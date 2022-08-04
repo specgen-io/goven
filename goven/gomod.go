@@ -1,7 +1,6 @@
 package goven
 
 import (
-	"fmt"
 	"golang.org/x/mod/modfile"
 	"io/ioutil"
 	"path/filepath"
@@ -39,7 +38,7 @@ func (mod *Gomod) Rename(name string) {
 }
 
 func (mod *Gomod) RenameSubmodule(oldName, newName string) {
-	mod.moduleRenames[oldName] = fmt.Sprintf(`%s/%s`, mod.ModuleName, newName)
+	mod.moduleRenames[oldName] = newName
 }
 
 func (mod *Gomod) DropRequire(moduleName string) {
