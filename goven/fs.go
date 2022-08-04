@@ -90,3 +90,11 @@ func ReplaceInPath(source string, patterns []string, old, new string) error {
 	})
 	return err
 }
+
+func PathExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info != nil
+}

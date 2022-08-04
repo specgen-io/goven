@@ -22,10 +22,13 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 	if err != nil {
 		return fmt.Errorf(`can't get absolute path for "%s" - %s`, gomodPath, err.Error())
 	}
+	if !PathExists(gomodPath) {
+		return fmt.Errorf(`can't find go module file "%s"`, gomodPath)
+	}
 	modulePath, modFilename := filepath.Split(gomodPath)
 	if vendorRequired {
 		modVendorPath := filepath.Join(modulePath, "vendor")
-		if _, err := os.Stat(modVendorPath); os.IsNotExist(err) {
+		if !PathExists(modVendorPath) {
 			return fmt.Errorf(`can't find vendor folder: "%s", run "go mod vendor" in the module first'`, modVendorPath)
 		}
 	}
@@ -42,6 +45,8 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 	if err != nil {
 		return err
 	}
+
+	// github.com/specgen-io/specgen/golang/v2/  github.com/specgen-io/specgen/golang/v2/  goven  /github.com/specgen-io/specgen/yamlx/v2
 
 	for _, replace := range mod.File.Replace {
 		sourceModulePath := filepath.Join(modulePath, replace.New.Path)
