@@ -23,6 +23,17 @@ func MatchesAny(patterns []string, filename string) (bool, error) {
 	return false, nil
 }
 
+func PrefixedWith(prefixes []string, s string) bool {
+	if prefixes != nil {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(s, prefix) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func CopyFile(sourcePath, destinationPath string) error {
 	data, err := ioutil.ReadFile(sourcePath)
 	if err != nil {
@@ -35,17 +46,20 @@ func CopyFile(sourcePath, destinationPath string) error {
 	return nil
 }
 
-func CopyDir(sourcePath, destinationPath string, excludePatterns []string) error {
+func CopyDir(sourcePath, destinationPath string, excludeFilenamePatterns []string, excludePaths []string) error {
 	var err = filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf(`failed to copy path "%s" - %s`, path, err.Error())
 		}
 		var relativePath = strings.Replace(path, sourcePath, "", 1)
+		if PrefixedWith(excludePaths, relativePath) {
+			return nil
+		}
 		if info.IsDir() {
 			return os.MkdirAll(filepath.Join(destinationPath, relativePath), 0755)
 		} else {
 			_, filename := filepath.Split(path)
-			match, err1 := MatchesAny(excludePatterns, filename)
+			match, err1 := MatchesAny(excludeFilenamePatterns, filename)
 			if err1 != nil {
 				return err1
 			}
@@ -71,14 +85,14 @@ func ReplaceInFile(path string, old, new string) error {
 	return nil
 }
 
-func ReplaceInPath(source string, patterns []string, old, new string) error {
+func ReplaceInPath(source string, filenamePatterns []string, old, new string) error {
 	var err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf(`failed to replace in path "%s" - %s`, path, err.Error())
 		}
 		if !info.IsDir() {
 			_, filename := filepath.Split(path)
-			match, err1 := MatchesAny(patterns, filename)
+			match, err1 := MatchesAny(filenamePatterns, filename)
 			if err1 != nil {
 				return err1
 			}

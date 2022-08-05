@@ -10,7 +10,7 @@ func vendorModule(sourceModulePath, targetPath, vendoredModulesFolder, oldModule
 	vendoredPackageName := filepath.Join(vendoredModulesFolder, oldModuleName)
 	vendoredModulePath := filepath.Join(targetPath, vendoredPackageName)
 
-	err := CopyDir(sourceModulePath, vendoredModulePath, []string{"go.mod", "go.sum"})
+	err := CopyDir(sourceModulePath, vendoredModulePath, []string{"go.mod", "go.sum"}, nil)
 	if err != nil {
 		return "", err
 	}
@@ -32,8 +32,12 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 			return fmt.Errorf(`can't find vendor folder: "%s", run "go mod vendor" in the module first'`, modVendorPath)
 		}
 	}
+	var excludePaths []string = nil
+	if !vendorRequired {
+		excludePaths = []string{"vendor"}
+	}
 	if outputPath != "" {
-		err := CopyDir(modulePath, outputPath, nil)
+		err := CopyDir(modulePath, outputPath, nil, excludePaths)
 		if err != nil {
 			return err
 		}
@@ -45,8 +49,6 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 	if err != nil {
 		return err
 	}
-
-	// github.com/specgen-io/specgen/golang/v2/  github.com/specgen-io/specgen/golang/v2/  goven  /github.com/specgen-io/specgen/yamlx/v2
 
 	for _, replace := range mod.File.Replace {
 		sourceModulePath := filepath.Join(modulePath, replace.New.Path)
