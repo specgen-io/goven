@@ -22,7 +22,7 @@ To use goven for vendoring, the module should be developed in one repository but
 
 ## Installation
 ```
-go install github.com/specgen-io/goven@v0.0.1
+go install github.com/specgen-io/goven@v0.0.2
 ```
 
 ## Usage
