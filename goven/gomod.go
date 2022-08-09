@@ -156,7 +156,7 @@ func renameInFile(path string, renames map[string]string) error {
 
 	for oldName, newName := range renames {
 		for _, imp := range ast.Imports {
-			if strings.HasPrefix(imp.Path.Value, `"`+oldName) {
+			if imp.Path.Value == fmt.Sprintf(`"%s"`, oldName) || strings.HasPrefix(imp.Path.Value, fmt.Sprintf(`"%s/`, oldName)) {
 				newPathValue := `"` + newName + strings.TrimPrefix(imp.Path.Value, `"`+oldName)
 				imp.Path.Value = newPathValue
 			}
