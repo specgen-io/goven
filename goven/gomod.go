@@ -2,8 +2,8 @@ package goven
 
 import (
 	"fmt"
+	"go/format"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"golang.org/x/mod/modfile"
 	"io/ioutil"
@@ -148,13 +148,8 @@ func renameModules(modulePath string, renames map[string]string) error {
 }
 
 func renameInFile(path string, renames map[string]string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf(`failed to read file "%s" - %s`, path, err.Error())
-	}
-
 	fset := token.NewFileSet()
-	ast, err := parser.ParseFile(fset, path, string(data), 0)
+	ast, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf(`failed to parse file "%s" - %s`, path, err.Error())
 	}
@@ -172,10 +167,10 @@ func renameInFile(path string, renames map[string]string) error {
 	if err != nil {
 		return fmt.Errorf(`failed to code in file "%s" - %s`, path, err.Error())
 	}
-	defer f.Close()
-	err = printer.Fprint(f, fset, ast)
+	err = format.Node(f, fset, ast)
 	if err != nil {
 		return fmt.Errorf(`failed to write modified imports code to file "%s" - %s`, path, err.Error())
 	}
+	defer f.Close()
 	return nil
 }
