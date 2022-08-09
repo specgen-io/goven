@@ -1,9 +1,15 @@
 package goven
 
 import (
+	"fmt"
+	"go/parser"
+	"go/printer"
+	"go/token"
 	"golang.org/x/mod/modfile"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Gomod struct {
@@ -61,7 +67,7 @@ func (mod *Gomod) Save(modFilename string) error {
 	}
 
 	if mod.newModuleName != "" {
-		err := renameModule(mod.modulePath, mod.ModuleName, mod.newModuleName)
+		err := renameModules(mod.modulePath, map[string]string{mod.ModuleName: mod.newModuleName})
 		if err != nil {
 			return err
 		}
@@ -120,20 +126,56 @@ func writeModfile(file *modfile.File, path string) error {
 	return nil
 }
 
-func renameModule(modulePath string, oldName, newName string) error {
-	err := ReplaceInPath(modulePath, []string{"*.go"}, oldName, newName)
-	if err != nil {
-		return err
-	}
-	return nil
+func renameModules(modulePath string, renames map[string]string) error {
+	filenamePatterns := []string{"*.go"}
+	var err = filepath.Walk(modulePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf(`failed to replace in path "%s" - %s`, path, err.Error())
+		}
+		if !info.IsDir() {
+			_, filename := filepath.Split(path)
+			match, err1 := MatchesAny(filenamePatterns, filename)
+			if err1 != nil {
+				return err1
+			}
+			if match {
+				return renameInFile(path, renames)
+			}
+		}
+		return nil
+	})
+	return err
 }
 
-func renameModules(modulePath string, renames map[string]string) error {
+func renameInFile(path string, renames map[string]string) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf(`failed to read file "%s" - %s`, path, err.Error())
+	}
+
+	fset := token.NewFileSet()
+	ast, err := parser.ParseFile(fset, path, string(data), 0)
+	if err != nil {
+		return fmt.Errorf(`failed to parse file "%s" - %s`, path, err.Error())
+	}
+
 	for oldName, newName := range renames {
-		err := renameModule(modulePath, oldName, newName)
-		if err != nil {
-			return err
+		for _, imp := range ast.Imports {
+			if strings.HasPrefix(imp.Path.Value, `"`+oldName) {
+				newPathValue := `"` + newName + strings.TrimPrefix(imp.Path.Value, `"`+oldName)
+				imp.Path.Value = newPathValue
+			}
 		}
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf(`failed to code in file "%s" - %s`, path, err.Error())
+	}
+	defer f.Close()
+	err = printer.Fprint(f, fset, ast)
+	if err != nil {
+		return fmt.Errorf(`failed to write modified imports code to file "%s" - %s`, path, err.Error())
 	}
 	return nil
 }

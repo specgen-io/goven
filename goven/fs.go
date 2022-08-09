@@ -72,39 +72,6 @@ func CopyDir(sourcePath, destinationPath string, excludeFilenamePatterns []strin
 	return err
 }
 
-func ReplaceInFile(path string, old, new string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf(`failed to read file "%s" - %s`, path, err.Error())
-	}
-	result := strings.Replace(string(data), old, new, -1)
-	err = ioutil.WriteFile(path, []byte(result), 0644)
-	if err != nil {
-		return fmt.Errorf(`failed to write file "%s" - %s`, path, err.Error())
-	}
-	return nil
-}
-
-func ReplaceInPath(source string, filenamePatterns []string, old, new string) error {
-	var err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf(`failed to replace in path "%s" - %s`, path, err.Error())
-		}
-		if !info.IsDir() {
-			_, filename := filepath.Split(path)
-			match, err1 := MatchesAny(filenamePatterns, filename)
-			if err1 != nil {
-				return err1
-			}
-			if match {
-				return ReplaceInFile(path, old, new)
-			}
-		}
-		return nil
-	})
-	return err
-}
-
 func PathExists(path string) bool {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
