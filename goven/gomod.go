@@ -98,6 +98,7 @@ func (mod *Gomod) Save(modFilename string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

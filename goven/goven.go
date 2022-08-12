@@ -3,6 +3,7 @@ package goven
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -88,5 +89,13 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 	if err != nil {
 		return err
 	}
+
+	goModTidy := exec.Command(`go`, `mod`, `tidy`)
+	goModTidy.Dir = outputPath
+	err = goModTidy.Run()
+	if err != nil {
+		return fmt.Errorf(`failed to run "go mod tidy" on vendored code: %s`, err.Error())
+	}
+
 	return nil
 }
