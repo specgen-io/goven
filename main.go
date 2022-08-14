@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/specgen-io/goven/github"
+	"github.com/specgen-io/goven/git"
 	"github.com/specgen-io/goven/goven"
 	"os"
 )
@@ -136,9 +136,8 @@ func createCmdRelease() Command {
 			repoPath = "."
 		}
 
-		credentials := github.Credentials{githubName, githubEmail, githubName, githubToken}
-
-		err = github.PutFiles(outPath, repoUrl, repoPath, version, credentials)
+		credentials := git.Credentials{githubName, githubEmail, githubName, githubToken}
+		err = git.PutFiles(outPath, repoUrl, repoPath, version, credentials)
 		if err != nil {
 			return fmt.Errorf(`saving to github failed: %s`, err.Error())
 		}
