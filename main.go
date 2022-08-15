@@ -6,6 +6,8 @@ import (
 	"github.com/specgen-io/goven/git"
 	"github.com/specgen-io/goven/goven"
 	"os"
+	"regexp"
+	"strings"
 )
 
 func main() {
@@ -19,20 +21,28 @@ func createCommands() Commands {
 	}
 }
 
-func createCmdVendor() Command {
-	var gomodPath string
-	var vendorRequired bool
-	var outPath string
-	var vendoredModulesFolder string
-	var newModuleName string
+type CommonOptions struct {
+	gomodPath             string
+	vendorRequired        bool
+	outPath               string
+	vendoredModulesFolder string
+	newModuleName         string
+}
 
+func (options *CommonOptions) Add(cmd *flag.FlagSet) {
+	cmd.StringVar(&options.gomodPath, "module", "./go.mod", "location of go.mod to be vendored")
+	cmd.BoolVar(&options.vendorRequired, "required", false, "vendor required modules (needs 'go mod vendor' prior goven, deafult false)")
+	cmd.StringVar(&options.outPath, "out", "./out", "path where to put vendored module")
+	cmd.StringVar(&options.vendoredModulesFolder, "vendor", "goven", "internal path where vendored modules should be placed")
+	cmd.StringVar(&options.newModuleName, "name", "", "name of the module after vendoring")
+}
+
+func createCmdVendor() Command {
 	cmdName := "vendor"
 	cmd := flag.NewFlagSet(cmdName, flag.ExitOnError)
-	cmd.StringVar(&gomodPath, "module", "./go.mod", "location of go.mod to be vendored")
-	cmd.BoolVar(&vendorRequired, "required", false, "vendor required modules (needs 'go mod vendor' prior goven, deafult false)")
-	cmd.StringVar(&outPath, "out", "./out", "path where to put vendored module")
-	cmd.StringVar(&vendoredModulesFolder, "vendor", "goven", "internal path where vendored modules should be placed")
-	cmd.StringVar(&newModuleName, "name", "", "name of the module after vendoring")
+
+	common := CommonOptions{}
+	common.Add(cmd)
 
 	parse := func(arguments []string) error {
 		err := cmd.Parse(arguments)
@@ -48,7 +58,7 @@ func createCmdVendor() Command {
 			return err
 		}
 
-		err = goven.Vendor(gomodPath, outPath, newModuleName, vendoredModulesFolder, vendorRequired)
+		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired)
 		if err != nil {
 			return fmt.Errorf(`vendoring failed: %s`, err.Error())
 		}
@@ -57,13 +67,18 @@ func createCmdVendor() Command {
 	}}
 }
 
+func splitVersion(moduleName string) (string, string) {
+	parts := strings.Split(moduleName, "/")
+	version := parts[len(parts)-1]
+	matched, _ := regexp.Match("v[0-9]+", []byte(version))
+	if matched {
+		name := strings.TrimSuffix(moduleName, fmt.Sprintf(`/%s`, version))
+		return name, version
+	}
+	return moduleName, ""
+}
+
 func createCmdRelease() Command {
-	var gomodPath string
-	var vendorRequired bool
-	var outPath string
-	var vendoredModulesFolder string
-	var repoSlug string
-	var majorVersion string
 	var version string
 	var githubName string
 	var githubEmail string
@@ -72,12 +87,10 @@ func createCmdRelease() Command {
 
 	cmdName := "release"
 	cmd := flag.NewFlagSet(cmdName, flag.ExitOnError)
-	cmd.StringVar(&gomodPath, "module", "./go.mod", "location of go.mod to be vendored")
-	cmd.BoolVar(&vendorRequired, "required", false, "vendor required modules (needs 'go mod vendor' prior goven, deafult false)")
-	cmd.StringVar(&outPath, "out", "./out", "path where to put vendored module")
-	cmd.StringVar(&vendoredModulesFolder, "vendor", "goven", "internal path where vendored modules should be placed")
-	cmd.StringVar(&repoSlug, "repo", "", "github repo slug to release vendored module to")
-	cmd.StringVar(&majorVersion, "major", "", `major version name (has to start with "v" if provided)`)
+
+	common := CommonOptions{}
+	common.Add(cmd)
+
 	cmd.StringVar(&version, "version", "", `version to release (has to be in format: "vMAJOR.MINOR.BUILD")`)
 	cmd.StringVar(&githubName, "github-name", os.Getenv("GITHUB_NAME"), "github commit author name (this is just a readable name - NOT a user name)")
 	cmd.StringVar(&githubEmail, "github-email", os.Getenv("GITHUB_EMAIL"), "github commit author email")
@@ -88,10 +101,6 @@ func createCmdRelease() Command {
 		err := cmd.Parse(arguments)
 		if err != nil {
 			return err
-		}
-
-		if repoSlug == "" {
-			return fmt.Errorf(`argument "repo" has to be provided`)
 		}
 
 		if githubName == "" {
@@ -119,17 +128,21 @@ func createCmdRelease() Command {
 			return err
 		}
 
-		newModuleName := fmt.Sprintf(`github.com/%s`, repoSlug)
-		if majorVersion != "" {
-			newModuleName = fmt.Sprintf(`%s/%s`, newModuleName, majorVersion)
-		}
-
-		repoUrl := fmt.Sprintf(`https://github.com/%s.git`, repoSlug)
-
-		err = goven.Vendor(gomodPath, outPath, newModuleName, vendoredModulesFolder, vendorRequired)
+		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired)
 		if err != nil {
 			return fmt.Errorf(`vendoring failed: %s`, err.Error())
 		}
+
+		moduleName := common.newModuleName
+		if moduleName == "" {
+			moduleName, err = goven.ModuleName(common.gomodPath)
+			if err != nil {
+				return fmt.Errorf(`can't get module name: %s`, err.Error())
+			}
+		}
+
+		repo, majorVersion := splitVersion(moduleName)
+		repoUrl := fmt.Sprintf(`https://%s.git`, repo)
 
 		repoPath := majorVersion
 		if repoPath == "" {
@@ -137,7 +150,7 @@ func createCmdRelease() Command {
 		}
 
 		credentials := git.Credentials{githubName, githubEmail, githubName, githubToken}
-		err = git.PutFiles(outPath, repoUrl, repoPath, version, credentials)
+		err = git.PutFiles(common.outPath, repoUrl, repoPath, version, credentials)
 		if err != nil {
 			return fmt.Errorf(`saving to github failed: %s`, err.Error())
 		}

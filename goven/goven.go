@@ -18,6 +18,14 @@ func vendorModule(sourceModulePath, targetPath, vendoredModulesFolder, oldModule
 	return vendoredPackageName, nil
 }
 
+func ModuleName(gomodPath string) (string, error) {
+	file, err := ReadModfile(gomodPath)
+	if err != nil {
+		return "", err
+	}
+	return file.Module.Mod.Path, nil
+}
+
 func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, vendorRequired bool) error {
 	gomodPath, err := filepath.Abs(gomodPath)
 	if err != nil {
@@ -49,6 +57,10 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 	mod, err := OpenModfile(outputPath, modFilename)
 	if err != nil {
 		return err
+	}
+
+	if newModuleName == "" {
+		newModuleName = mod.ModuleName
 	}
 
 	for _, replace := range mod.File.Replace {

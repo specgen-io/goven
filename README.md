@@ -71,21 +71,21 @@ Check `goven vendor -help` to learn about all arguments.
 This command will vendor code rename the module into `github.com/example/mymodule` and push it to the corresponding Github repository:
 
 ```
-goven release -repo example/mymodule
+goven release -name github.com/example/mymodule
 ```
 
 The `-major` option could be used to specify major version of the vendored module.
 In the case below the vendored module will be named `github.com/example/mymodule/v2` and also it will be pushed into `v2` folder of the repository:
 
 ```
-goven release -repo example/mymodule -major v2
+goven release -name github.com/example/mymodule/v2
 ```
 
 The `release` command can create and push tag into the release repository.
 This could be done via `-version` option:
 
 ```
-goven release -repo example/mymodule -major v2 -version v2.0.0
+goven release -name github.com/example/mymodule/v2 -version v2.0.0
 ```
 
 The other options like `-module`, `-required`, `-out`, `-vendor` are working for `release` command the same way as for `vendor` command.

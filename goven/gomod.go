@@ -24,7 +24,7 @@ type Gomod struct {
 }
 
 func OpenModfile(modulePath, modFilename string) (*Gomod, error) {
-	file, err := readModfile(filepath.Join(modulePath, modFilename))
+	file, err := ReadModfile(filepath.Join(modulePath, modFilename))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (mod *Gomod) Save(modFilename string) error {
 	return nil
 }
 
-func readModfile(gomodPath string) (*modfile.File, error) {
+func ReadModfile(gomodPath string) (*modfile.File, error) {
 	buf, err := ioutil.ReadFile(gomodPath)
 	if err != nil {
 		return nil, err
