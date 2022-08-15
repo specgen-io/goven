@@ -22,7 +22,7 @@ To use goven for vendoring, the module should be developed in one repository but
 
 ## Installation
 ```
-go install github.com/specgen-io/goven@v0.0.7
+go install github.com/specgen-io/goven@v0.0.9
 ```
 
 ## Usage
@@ -74,8 +74,7 @@ This command will vendor code rename the module into `github.com/example/mymodul
 goven release -name github.com/example/mymodule
 ```
 
-The `-major` option could be used to specify major version of the vendored module.
-In the case below the vendored module will be named `github.com/example/mymodule/v2` and also it will be pushed into `v2` folder of the repository:
+In the case below the vendored module will be named `github.com/example/mymodule/v2` and also it will be pushed into `v2` folder of the repository as go requires:
 
 ```
 goven release -name github.com/example/mymodule/v2
