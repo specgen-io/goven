@@ -27,12 +27,9 @@ func PutFiles(sourcePath string, repoUrl, path string, tag string, credentials C
 		return fmt.Errorf(`getting work tree for repo "%s" failed: %s`, repoUrl, err.Error())
 	}
 
-	info, _ := filesystem.Lstat(path)
-	if info != nil {
-		err = removeDir(filesystem, path)
-		if err != nil {
-			return err
-		}
+	_, err = w.Remove(path)
+	if err != nil {
+		return fmt.Errorf(`removing path "%s" from working copy failed: %s`, path, err.Error())
 	}
 
 	err = copyDir(sourcePath, filesystem, path)
