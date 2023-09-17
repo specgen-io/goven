@@ -26,7 +26,7 @@ func ModuleName(gomodPath string) (string, error) {
 	return file.Module.Mod.Path, nil
 }
 
-func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, vendorRequired bool) error {
+func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, vendorRequired bool, excludePaths []string) error {
 	gomodPath, err := filepath.Abs(gomodPath)
 	if err != nil {
 		return fmt.Errorf(`can't get absolute path for "%s" - %s`, gomodPath, err.Error())
@@ -41,7 +41,6 @@ func Vendor(gomodPath, outputPath, newModuleName, vendoredModulesFolder string, 
 			return fmt.Errorf(`can't find vendor folder: "%s", run "go mod vendor" in the module first'`, modVendorPath)
 		}
 	}
-	var excludePaths []string = nil
 	if !vendorRequired {
 		excludePaths = []string{"vendor"}
 	}

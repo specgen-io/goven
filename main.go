@@ -21,20 +21,33 @@ func createCommands() Commands {
 	}
 }
 
+type stringArray []string
+
+func (arr *stringArray) String() string {
+	return strings.Join(*arr, ", ")
+}
+
+func (arr *stringArray) Set(value string) error {
+	*arr = append(*arr, value)
+	return nil
+}
+
 type CommonOptions struct {
 	gomodPath             string
 	vendorRequired        bool
 	outPath               string
 	vendoredModulesFolder string
 	newModuleName         string
+	ignorePaths           stringArray
 }
 
 func (options *CommonOptions) Add(cmd *flag.FlagSet) {
 	cmd.StringVar(&options.gomodPath, "module", "./go.mod", "location of go.mod to be vendored")
-	cmd.BoolVar(&options.vendorRequired, "required", false, "vendor required modules (needs 'go mod vendor' prior goven, deafult false)")
+	cmd.BoolVar(&options.vendorRequired, "required", false, "vendor required modules (needs 'go mod vendor' prior goven, default: false)")
 	cmd.StringVar(&options.outPath, "out", "./out", "path where to put vendored module")
 	cmd.StringVar(&options.vendoredModulesFolder, "vendor", "goven", "internal path where vendored modules should be placed")
 	cmd.StringVar(&options.newModuleName, "name", "", "name of the module after vendoring")
+	cmd.Var(&options.ignorePaths, "ignore", "folders to ignore during vendoring")
 }
 
 func createCmdVendor() Command {
@@ -58,7 +71,7 @@ func createCmdVendor() Command {
 			return err
 		}
 
-		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired)
+		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired, common.ignorePaths)
 		if err != nil {
 			return fmt.Errorf(`vendoring failed: %s`, err.Error())
 		}
@@ -128,7 +141,7 @@ func createCmdRelease() Command {
 			return err
 		}
 
-		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired)
+		err = goven.Vendor(common.gomodPath, common.outPath, common.newModuleName, common.vendoredModulesFolder, common.vendorRequired, common.ignorePaths)
 		if err != nil {
 			return fmt.Errorf(`vendoring failed: %s`, err.Error())
 		}
